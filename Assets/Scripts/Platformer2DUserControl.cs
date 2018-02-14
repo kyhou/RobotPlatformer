@@ -5,7 +5,7 @@ using UnityEngine;
 public class Platformer2DUserControl : MonoBehaviour
 {
     private PlatformerCharacter2D character;
-    private bool jump;
+    private bool jump, water;
 
 
     private void Awake()
@@ -47,7 +47,19 @@ public class Platformer2DUserControl : MonoBehaviour
         //float h = CrossPlatformInputManager.GetAxis("Horizontal");
         float h = Input.GetAxis("Horizontal");
         // Pass all parameters to the character control script.
-        character.Move(h, crouch, jump);
+        character.Move(h, crouch, jump, water);
         jump = false;
+    }
+
+    private void OnTriggerStay2D(Collider2D collision)
+    {
+        if (collision.tag == "Water")
+        {
+            water = true;
+        }
+        else
+        {
+            water = false;
+        }
     }
 }

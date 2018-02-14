@@ -81,7 +81,7 @@ public class PlatformerCharacter2D : MonoBehaviour
     }
 
 
-    public void Move(float move, bool crouch, bool jump)
+    public void Move(float move, bool crouch, bool jump, bool water)
     {
         // If crouching, check to see if the character can stand up
         if (!crouch )//&& m_Anim.GetBool("Crouch"))
@@ -122,7 +122,7 @@ public class PlatformerCharacter2D : MonoBehaviour
             }
         }
         // If the player should jump...
-        if ((grounded || joint.enabled) && jump) //&& m_Anim.GetBool("Ground"))
+        if ((grounded || joint.enabled || water) && jump) //&& m_Anim.GetBool("Ground"))
         {
             // Add a vertical force to the player.
             grounded = false;
@@ -177,13 +177,4 @@ public class PlatformerCharacter2D : MonoBehaviour
     {
         Destroy(this.gameObject);
     }
-
-    /*private void OnTriggerEnter2D(Collider2D collision)
-    {
-        if (collision.tag == "Coins")
-        {
-
-            collision.GetComponent<Coins>().collectCoin(collision.transform.position, facingRight);
-        }
-    }*/
 }
