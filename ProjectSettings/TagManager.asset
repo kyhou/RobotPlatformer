@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Coins
   - Water
+  - PickUpItem
   layers:
   - Default
   - TransparentFX
@@ -17,8 +18,8 @@ TagManager:
   - 
   - Player
   - Ground
-  - Wall
-  - Ceiling
+  - MovableItems
+  - 
   - 
   - 
   - 

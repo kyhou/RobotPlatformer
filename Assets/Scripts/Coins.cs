@@ -7,6 +7,7 @@ public class Coins : MonoBehaviour
 {
     public void OnTriggerEnter2D()
     {
+        GameManager.Instance.AddCoins(1);
         Destroy(this.gameObject);
     }
 }

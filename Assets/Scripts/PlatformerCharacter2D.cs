@@ -4,45 +4,66 @@ using UnityEngine;
 public class PlatformerCharacter2D : MonoBehaviour
 {
     [SerializeField]
-    private float maxSpeed = 10f;                    // The fastest the player can travel in the x axis.
+    private float maxSpeed = 10f;
     [SerializeField]
-    private float jumpForce = 400f;                  // Amount of force added when the player jumps.
+    private float jumpForce = 400f;
     [Range(0, 1)]
     [SerializeField]
-    private float crouchSpeed = .36f;  // Amount of maxSpeed applied to crouching movement. 1 = 100%
+    private float crouchSpeed = 0f;//.36f;  
+    //[SerializeField]
+    //private bool airControl = false;   
     [SerializeField]
-    private bool airControl = false;                 // Whether or not a player can steer while jumping;
-    [SerializeField]
-    private LayerMask whatIsGround;                  // A mask determining what is ground to the character
+    private LayerMask whatIsGround;
 
-    private Transform groundCheck;    // A position marking where to check if the player is grounded.
-    const float groundedRadius = .2f; // Radius of the overlap circle to determine if grounded
-    private bool grounded;            // Whether or not the player is grounded.
-    private Transform ceilingCheck;   // A position marking where to check for ceilings
-    const float ceilingRadius = .01f; // Radius of the overlap circle to determine if the player can stand up
+    private Collider2D[] colliders;
+    private Transform groundCheck;
+    const float groundedRadius = .2f;
+    private bool grounded;
+    private Transform ceilingCheck;
+    const float ceilingRadius = .01f;
     //private Animator m_Anim;            // Reference to the player's animator component.
     private Rigidbody2D rig;
-    private bool facingRight = true;  // For determining which way the player is currently facing.
+    private bool facingRight = true;
 
     private DistanceJoint2D joint;
-    private float fallMultiplier = 3f;
-    private float lowJumpMultiplier = 2f;
-    private float dashSpeed = 10f;
+    private float fallMultiplier = 5f;
+    private float lowJumpMultiplier = 4f;
+    private float dashSpeed = 1f;
+    private float dashSpeedMultiplier = 1.5f;
     [SerializeField]
     private LayerMask hookMask;
-    private Transform rightCheck;
-    private Transform leftCheck;
+    /* private Transform rightCheck;
+     private Transform leftCheck;*/
+    private Vector3 startPoint;
+    private Vector2 boxSize;
+    [SerializeField]
+    private float groundedDepth = 0.2f;
+    Vector2 newBoxSize;
+
+    private bool water;
+    [SerializeField]
+    private float waterMultiplier = 2f;
+    private float jumpForceTemp;
+    [SerializeField]
+    private float dashDuration = 1f;
+    private float dashTimer = 0f;
+    private bool airDash = false;
 
     private void Awake()
     {
-        // Setting up references.
         groundCheck = transform.Find("GroundCheck");
         ceilingCheck = transform.Find("CeilingCheck");
-        rightCheck = transform.Find("RightCheck");
-        leftCheck = transform.Find("LeftCheck");
+        /*rightCheck = transform.Find("RightCheck");
+        leftCheck = transform.Find("LeftCheck");*/
+        startPoint = GameObject.Find("StartPoint").transform.position;
+
         //m_Anim = GetComponent<Animator>();
         rig = GetComponent<Rigidbody2D>();
         joint = GetComponent<DistanceJoint2D>();
+        boxSize = new Vector2(GetComponent<BoxCollider2D>().size.x - .05f, groundedDepth);
+
+        groundCheck.position = new Vector3(transform.position.x, (transform.position.y - rig.GetComponent<BoxCollider2D>().size.y / 2), transform.position.z);
+        //ceilingCheck.position = new Vector3(transform.position.x, (transform.position.y + rig.GetComponent<SpriteRenderer>().size.y / 2), transform.position.z);
 
         joint.enabled = false;
         joint.distance = GetComponent<BoxCollider2D>().size.x / 2;
@@ -53,38 +74,45 @@ public class PlatformerCharacter2D : MonoBehaviour
     {
         grounded = false;
 
-        // The player is grounded if a circlecast to the groundcheck position hits anything designated as ground
-        // This can be done using layers instead but Sample Assets will not overwrite your project settings.
-        Collider2D[] colliders = Physics2D.OverlapCircleAll(groundCheck.position, groundedRadius, whatIsGround);
+        //newBoxSize = new Vector2(boxSize.x, boxSize.y + (Mathf.Abs(rig.velocity.y) * groundedDepth * 2));
+        colliders = Physics2D.OverlapBoxAll(groundCheck.position, boxSize, 0f, whatIsGround);  //OverlapCircleAll(groundCheck.position, groundedRadius, whatIsGround);
         for (int i = 0; i < colliders.Length; i++)
         {
             if (colliders[i].gameObject != gameObject)
                 grounded = true;
         }
+
         //m_Anim.SetBool("Ground", m_Grounded);
 
         // Set the vertical animation
         //m_Anim.SetFloat("vSpeed", m_Rigidbody2D.velocity.y);
 
-        if (rig.velocity.y < 0)
+        if (!water && dashSpeed != dashSpeedMultiplier)
         {
-            rig.gravityScale = fallMultiplier;
+            if (rig.velocity.y < 0)
+            {
+                rig.gravityScale = fallMultiplier;
+            }
+            else if (rig.velocity.y > 0 && !Input.GetButton("Jump"))
+            {
+                rig.gravityScale = lowJumpMultiplier;
+            }
+            else
+            {
+                rig.gravityScale = 3f;
+            }
         }
-        else if (rig.velocity.y > 0 && !Input.GetButton("Jump"))
+        else if (water)
         {
-            rig.gravityScale = lowJumpMultiplier;
-        }
-        else
-        {
-            rig.gravityScale = 1f;
+            rig.gravityScale = 3f;
         }
     }
 
 
-    public void Move(float move, bool crouch, bool jump, bool water)
+    public void Move(float move, bool crouch)
     {
         // If crouching, check to see if the character can stand up
-        if (!crouch )//&& m_Anim.GetBool("Crouch"))
+        if (!crouch)//&& m_Anim.GetBool("Crouch"))
         {
             // If the character has a ceiling preventing them from standing up, keep them crouching
             if (Physics2D.OverlapCircle(ceilingCheck.position, ceilingRadius, whatIsGround) && crouch)
@@ -96,49 +124,67 @@ public class PlatformerCharacter2D : MonoBehaviour
         // Set whether or not the character is crouching in the animator
         //m_Anim.SetBool("Crouch", crouch);
 
-        //only control the player if grounded or airControl is turned on
-        if (grounded || airControl)
+        //move = (crouch ? move * crouchSpeed : move);
+
+        // The Speed animator parameter is set to the absolute value of the horizontal input.
+        //m_Anim.SetFloat("Speed", Mathf.Abs(move));
+
+        rig.velocity = new Vector2(move * maxSpeed * dashSpeed, rig.velocity.y);
+
+        if (!grounded && dashTimer != 0 && airDash)
         {
-            // Reduce the speed if crouching by the crouchSpeed multiplier
-            move = (crouch ? move * crouchSpeed : move);
+            airDash = true;
+            rig.gravityScale = 0;
+            rig.velocity = new Vector2(move * maxSpeed * dashSpeed, 0);
+        }
 
-            // The Speed animator parameter is set to the absolute value of the horizontal input.
-            //m_Anim.SetFloat("Speed", Mathf.Abs(move));
+        if (move > 0 && !facingRight)
+        {
+            Flip();
+        }
+        else if (move < 0 && facingRight)
+        {
+            Flip();
+        }
 
-            // Move the character
-            rig.velocity = new Vector2(move * maxSpeed, rig.velocity.y);
-            
-            // If the input is moving the player right and the player is facing left...
-            if (move > 0 && !facingRight)
+        if (dashTimer > dashDuration)
+        {
+            if (airDash)
             {
-                // ... flip the player.
-                Flip();
+                dashSpeed = 1;
+                dashTimer = 0;
+
+                airDash = false;
             }
-            // Otherwise if the input is moving the player left and the player is facing right...
-            else if (move < 0 && facingRight)
+            else if (grounded || water)
             {
-                // ... flip the player.
-                Flip();
+                dashSpeed = 1;
+                dashTimer = 0;
             }
         }
-        // If the player should jump...
-        if ((grounded || joint.enabled || water) && jump) //&& m_Anim.GetBool("Ground"))
+
+        if (dashSpeed == dashSpeedMultiplier)
         {
-            // Add a vertical force to the player.
-            grounded = false;
-            HookRelease();
-            //m_Anim.SetBool("Ground", false);
-            rig.AddForce(new Vector2(0f, jumpForce)); //, ForceMode2D.Impulse);
+            dashTimer += Time.deltaTime;
         }
     }
 
+    public void Jump(bool jump)
+    {
+        if ((grounded || joint.enabled || water) && jump) //&& m_Anim.GetBool("Ground"))
+        {
+            grounded = false;
+            HookRelease();
+            //m_Anim.SetBool("Ground", false);
+            rig.AddForce(new Vector2(0f, jumpForce));
+            jump = false;
+        }
+    }
 
     private void Flip()
     {
-        // Switch the way the player is labelled as facing.
         facingRight = !facingRight;
 
-        // Multiply the player's x local scale by -1.
         Vector3 theScale = transform.localScale;
         theScale.x *= -1;
         transform.localScale = theScale;
@@ -170,11 +216,54 @@ public class PlatformerCharacter2D : MonoBehaviour
 
     public void Dash()
     {
-        rig.AddForce(new Vector2(dashSpeed, 0f),ForceMode2D.Impulse);
+        dashSpeed = dashSpeedMultiplier;
+        if (!grounded)
+        {
+            airDash = true;
+        }
     }
 
     public void Spike()
     {
-        Destroy(this.gameObject);
+        Die(); // TEMP
+    }
+
+    public void TakeDamage(bool instantDeath)
+    {
+        if (instantDeath)
+        {
+            Die();
+        }
+        else
+        {
+            //TAKE 1 HIT
+            Debug.Log("Player Hit!!!!");
+        }
+    }
+
+    public void Die()
+    {
+        joint.enabled = false;
+        gameObject.transform.position = startPoint;
+        //Destroy(this.gameObject);
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.tag == "Water")
+        {
+            water = true;
+            jumpForceTemp = jumpForce;
+            jumpForce *= waterMultiplier;
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D collision)
+    {
+        if (collision.tag == "Water")
+        {
+            water = false;
+            jumpForce = jumpForceTemp;
+        }
     }
 }

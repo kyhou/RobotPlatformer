@@ -6,6 +6,9 @@ public class Spikes : MonoBehaviour
 {
     private void OnTriggerEnter2D(Collider2D col)
     {
-        col.gameObject.GetComponent<PlatformerCharacter2D>().Spike();
+        if (col.gameObject.GetComponent<PlatformerCharacter2D>() != null)
+        {
+            col.gameObject.GetComponent<PlatformerCharacter2D>().Spike();
+        }
     }
 }

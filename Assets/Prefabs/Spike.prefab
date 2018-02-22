@@ -68,10 +68,10 @@ PolygonCollider2D:
     m_Paths:
     - - {x: -0.45, y: -0.5}
       - {x: 0.45, y: -0.5}
-      - {x: 0.45, y: -0.263299}
-      - {x: 0.36, y: -0.07146406}
-      - {x: -0.36, y: -0.072027445}
-      - {x: -0.45, y: -0.26}
+      - {x: 0.45623493, y: -0.35682464}
+      - {x: 0.3444128, y: 0.00023889542}
+      - {x: -0.34129524, y: -0.003442049}
+      - {x: -0.46558714, y: -0.35976052}
 --- !u!114 &114176818029132846
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -117,7 +117,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21301864, guid: ac09613c1e169ec49b6bf23eb805cf98, type: 3}
+  m_Sprite: {fileID: 21300620, guid: 47666263d23efd0458a55e88022ff26e, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0

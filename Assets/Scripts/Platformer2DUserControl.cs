@@ -1,65 +1,73 @@
 using System;
 using UnityEngine;
+using Gamelogic.Extensions;
 
 [RequireComponent(typeof(PlatformerCharacter2D))]
 public class Platformer2DUserControl : MonoBehaviour
 {
     private PlatformerCharacter2D character;
-    private bool jump, water;
 
+    private float horizontalAxis;
+    private bool dash = false;
+
+    private ObservedValue<bool> jump = new ObservedValue<bool>(false);
+    public event Action<bool> Grab = delegate { };
+
+    private bool pickItem = false;
 
     private void Awake()
     {
         character = GetComponent<PlatformerCharacter2D>();
     }
 
+    private void Start()
+    {
+        jump.OnValueChange += Jump_OnValueChange;
+    }
+
+    private void Jump_OnValueChange()
+    {
+        if(jump.Value)
+            character.Jump(jump.Value);
+        jump.Value = false;
+    }
 
     private void Update()
     {
-        /*if (!jump)
+        if (!jump.Value)
         {
             // Read the jump input in Update so button presses aren't missed.
             //m_Jump = CrossPlatformInputManager.GetButtonDown("Jump");
-            jump = Input.GetButtonDown("Jump");
-        }*/
+            jump.Value = Input.GetButtonDown("Jump");
+        }
 
         if (Input.GetMouseButtonDown(0))
         {
             character.HookShoot(Input.mousePosition);
         }
 
-        if (Input.GetButtonDown("Jump"))
+        if(Input.GetKeyDown(KeyCode.LeftShift))
         {
-            jump = Input.GetButtonDown("Jump");
+            dash = Input.GetKeyDown(KeyCode.LeftShift);
         }
 
-        if (Input.GetKeyDown(KeyCode.LeftShift))
-        {
-            character.Dash();
-        }
+        pickItem = Input.GetKey(KeyCode.C);
+        
+        Grab(pickItem);        
     }
 
 
     private void FixedUpdate()
     {
-        // Read the inputs.
         bool crouch = Input.GetKey(KeyCode.LeftControl);
         //float h = CrossPlatformInputManager.GetAxis("Horizontal");
-        float h = Input.GetAxis("Horizontal");
-        // Pass all parameters to the character control script.
-        character.Move(h, crouch, jump, water);
-        jump = false;
-    }
+        horizontalAxis = Input.GetAxis("Horizontal");
+        character.Move(horizontalAxis, crouch);
 
-    private void OnTriggerStay2D(Collider2D collision)
-    {
-        if (collision.tag == "Water")
+        if (dash)
         {
-            water = true;
-        }
-        else
-        {
-            water = false;
+            character.Dash();
+            dash = false;
         }
     }
 }
